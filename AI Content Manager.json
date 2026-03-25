@@ -1,0 +1,345 @@
+{
+  "name": "AI Content Manager",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        -128
+      ],
+      "id": "f043525a-5c10-4f21-8d32-381ee40dd5f5",
+      "name": "Schedule Trigger",
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "You are a Social Media Manager.\n\nGenerate a LinkedIn post for a digital marketing agency.\n\nRespond with ONLY this JSON, nothing else:\n{\"caption\": \"write full linkedin post with hashtags here\", \"image_prompt\": \"describe a professional business image here\"}",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        144,
+        -128
+      ],
+      "id": "0404af8b-a62e-4bdb-8eeb-2b152fe5e457",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        128
+      ],
+      "id": "e6a300e8-e03b-4db8-a2e9-0c379558dda6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "2eKNoNg2SHVBgimZ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "={{ $json.image_prompt }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        672,
+        -128
+      ],
+      "id": "fd555927-fe72-4acc-8f27-de363b38b9c6",
+      "name": "Generate an image",
+      "credentials": {
+        "openAiApi": {
+          "id": "2eKNoNg2SHVBgimZ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"caption\": {\n      \"type\": \"string\",\n      \"description\": \"LinkedIn post caption with hashtags\"\n    },\n    \"image_prompt\": {\n      \"type\": \"string\", \n      \"description\": \"DALL-E image generation prompt\"\n    }\n  },\n  \"required\": [\"caption\", \"image_prompt\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        96
+      ],
+      "id": "202c9abc-adf3-42a5-8c22-1b9554e2ac11",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "operation": "sendPhoto",
+        "chatId": "6402646906",
+        "binaryData": true,
+        "replyMarkup": "inlineKeyboard",
+        "inlineKeyboard": {
+          "rows": [
+            {
+              "row": {
+                "buttons": [
+                  {
+                    "text": "Approve",
+                    "additionalFields": {
+                      "callback_data": "approve"
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "additionalFields": {
+          "caption": "={{ $('AI Agent').item.json.output.properties.caption.description.substring(0, 800) }}\n\n✅ Approve: {{ $execution.resumeUrl }}?approve=true\n❌ Skip: {{ $execution.resumeUrl }}?approve=false"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        -128
+      ],
+      "id": "83629914-84c8-45de-a4b0-66979da3223c",
+      "name": "Send a photo message",
+      "webhookId": "06758115-d387-48ee-a88f-f131f79211a0",
+      "credentials": {
+        "telegramApi": {
+          "id": "Of8xPg91QjlOuJ6o",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawOutput = $input.first().json.output;\n\nlet caption, image_prompt;\n\nif (typeof rawOutput === 'string') {\n  const parsed = JSON.parse(rawOutput);\n  caption = parsed.caption;\n  image_prompt = parsed.image_prompt;\n} else {\n  caption = rawOutput.properties?.caption?.description || rawOutput.caption;\n  image_prompt = rawOutput.properties?.image_prompt?.description || rawOutput.image_prompt;\n}\n\nreturn [{\n  json: {\n    caption: caption,\n    image_prompt: image_prompt\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -128
+      ],
+      "id": "cdba0047-787a-4878-8006-046a0b560233",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        736,
+        112
+      ],
+      "id": "09de5ca5-c5d6-43b6-8436-8b6416c73e40",
+      "name": "Wait",
+      "webhookId": "b3cce7f1-4d99-4cf4-bc8f-339fec6ef937"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f1b9198e-aaac-4395-9f43-ed3bc6c6acc7",
+              "leftValue": "={{ $json.query.approve.toString() }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        960,
+        112
+      ],
+      "id": "2e80f91b-2ace-4d46-90be-7bb3810e8f22",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "httpRequestMethod": "POST",
+        "graphApiVersion": "v23.0",
+        "node": "122094330386880948",
+        "edge": "photos",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        96
+      ],
+      "id": "3123ce59-f539-49db-97ef-dc75f55730b9",
+      "name": "Facebook Graph API",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "eYAMW6zfH8r0ir0y",
+          "name": "Facebook Graph account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate an image": {
+      "main": [
+        [
+          {
+            "node": "Send a photo message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Generate an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a photo message": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "11ebfd6e-7db7-4cfa-871e-9f6feef6c142",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c003baf4c13ebe0ca4ffa413049716920dbc935a39545b2313c40c8cad020481"
+  },
+  "id": "8TfIHvg0a1prmBaD",
+  "tags": []
+}
