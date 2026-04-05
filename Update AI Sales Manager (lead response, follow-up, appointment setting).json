@@ -1,0 +1,1104 @@
+{
+  "name": "Update AI Sales Manager (lead response, follow-up, appointment setting)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        -624
+      ],
+      "id": "f3688df2-a5b4-42b6-a238-a330133e53f6",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Outbound Sales Specialist for a firm with two distinct divisions: \n1. Residential Real Estate (Focus: Property investment, listings, and market value).\n2. Financial Planning / Insurance Services (Focus: Risk management, wealth planning, and security).\n\nYOUR GOAL: \nWrite a highly personalized, human-sounding 1-sentence \"Icebreaker\" for a cold email. \n\nLEAD DATA (Mapping from Google Sheets):\n- Name: {{ $json[\"Full Name\"] }}\n- Job Title: {{ $json[\"Job Title\"] }}\n- Industry: {{ $json[\"Industry\"] }}\n- LinkedIn Bio: {{ $json[\"LinkedIn Bio\"] }}\n- Target Business: {{ $json[\"Service Category\"] }}\n\nSTRICT LOGIC RULES:\n1. If 'Target Business' is \"Residential Real Estate\": Your icebreaker must mention property trends, high-yield investments, or specific local market interest (e.g., Dhaka North/Purbachal) based on their Bio.\n2. If 'Target Business' is \"Insurance Services\": Your icebreaker must focus on professional legacy, employee benefits, or long-term financial security based on their Job Title.\n3. PERSONALIZATION: Use a specific detail from their 'LinkedIn Bio' or 'Job Title' so it doesn't look like an automated template.\n4. TONE: Professional, curious, and non-salesy.\n5. CONSTRAINT: Output ONLY the 1-sentence icebreaker. No \"Here is the line,\" no quotes, and no intro text.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        384,
+        -624
+      ],
+      "id": "00672288-74a6-4d73-8040-a51e7011d8fb",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        384,
+        -432
+      ],
+      "id": "c68b49df-b3ff-4280-bd6b-491088948cac",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "xEF8vnMyxp2xxevt",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Get row(s) in sheet\"].json[\"Email\"] }}",
+        "subject": "={{ $node[\"Get row(s) in sheet\"].json[\"Full Name\"] }}",
+        "message": "=<p>Hi <strong>{{ $node[\"Get row(s) in sheet\"].json[\"Full Name\"] }}</strong>,</p>\n\n<p>{{ $node[\"AI Agent\"].json[\"output\"] }}</p>\n\n<p>I’ve been following the current trends in the <strong>{{ $node[\"Get row(s) in sheet\"].json[\"Service Category\"] }}</strong> sector, and your profile caught my attention. I’d love to discuss how we can help you achieve better results in this area.</p>\n\n<p>Are you available for a quick 5-minute chat sometime this week?</p>\n\n<p>Best regards,<br>\n<strong>Shuvo Biswas</strong><br>\nAI Automation Specialist</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        736,
+        -624
+      ],
+      "id": "11d4426a-2670-4d33-ab60-ec1468bd723e",
+      "name": "Send a message",
+      "webhookId": "d4ff1905-9e9e-42af-bb03-09f6ffda2449",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EHoNBaEj5bvYSRcC",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk",
+          "mode": "list",
+          "cachedResultName": "Ai Sales CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Sent Date": "={{ $('Schedule Trigger').item.json['Readable date'] }}",
+            "AI Icebreaker": "={{ $('AI Agent').item.json.output }}",
+            "Status": "={{ $('Get row(s) in sheet').item.json.Status }}",
+            "Servece Ctegory": "={{ $('Get row(s) in sheet').item.json['Service Category'] }}",
+            "Linkedln Bio": "={{ $('Get row(s) in sheet').item.json['LinkedIn Bio'] }}",
+            "Email": "={{ $('Get row(s) in sheet').item.json.Email }}",
+            "Full Name": "={{ $('Get row(s) in sheet').item.json['Full Name'] }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Sent Date",
+              "displayName": "Sent Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Linkedln Bio",
+              "displayName": "Linkedln Bio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Servece Ctegory",
+              "displayName": "Servece Ctegory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Icebreaker",
+              "displayName": "AI Icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        960,
+        -624
+      ],
+      "id": "07c368e6-e3a0-4ae1-8d46-650f25285713",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ORAAXnzwftlZwSK4",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        -112
+      ],
+      "id": "5789a9f2-f7e6-4db1-a24b-42e8be435f63",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk",
+          "mode": "list",
+          "cachedResultName": "Ai Sales CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "New"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        -112
+      ],
+      "id": "61586b5b-711c-4feb-bbc3-860a1a782e37",
+      "name": "Get row(s) in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ORAAXnzwftlZwSK4",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 1,
+        "filters": {
+          "q": "=from:{{ $json.Email }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        -112
+      ],
+      "id": "1717c332-a672-4625-bd72-1aafef053c40",
+      "name": "Get many messages",
+      "webhookId": "accbb88a-778b-42c5-8470-4e20d3e140f3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EHoNBaEj5bvYSRcC",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ce091c5e-853f-4291-8ad8-cc5512b1da84",
+              "leftValue": "={{ $node[\"Get many messages\"].json[\"labels\"] }}",
+              "rightValue": "INBOX",
+              "operator": {
+                "type": "array",
+                "operation": "contains",
+                "rightType": "any"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1072,
+        -112
+      ],
+      "id": "a40dd4cb-6632-4762-a3bd-4f902a45a501",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\"You are an AI Sales Assistant. Your goal is to write a polite, short, and non-pushy follow-up email.\n\nContext:\n\nLead Name: {{ $node[\"Get row(s) in sheet1\"].json[\"Full Name\"] }}\n\nOriginal Icebreaker used:{{ $node[\"Get row(s) in sheet1\"].json[\"AI Icebreaker\"] }}\n\nService Category: {{ $node[\"Get row(s) in sheet1\"].json[\"Servece Ctegory\"] }}\n\nGuidelines:\n\nReference the previous email naturally.\n\nDo not repeat the entire icebreaker, just keep the tone friendly.\n\nKeep it under 3-4 sentences.\n\nEnd with a simple call to action (e.g., 'Do you have 5 minutes next week?').\n\nOutput only the email body.\"",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1360,
+        -272
+      ],
+      "id": "993e85ad-7782-47ed-b5dc-a096b327fc06",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk",
+          "mode": "list",
+          "cachedResultName": "Ai Sales CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "Replied",
+            "Email": "={{ $node[\"Get row(s) in sheet1\"].json[\"Email\"] }}",
+            "row_number": "={{ $node[\"Get row(s) in sheet1\"].json[\"row_number\"] }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Sent Date",
+              "displayName": "Sent Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Linkedln Bio",
+              "displayName": "Linkedln Bio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Servece Ctegory",
+              "displayName": "Servece Ctegory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Icebreaker",
+              "displayName": "AI Icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1360,
+        48
+      ],
+      "id": "72283419-5fd5-4878-b853-b13a22f0d480",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ORAAXnzwftlZwSK4",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        -96
+      ],
+      "id": "09123053-0582-4611-a1d3-37ad69584568",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "xEF8vnMyxp2xxevt",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Get row(s) in sheet1\"].json[\"Email\"] }}",
+        "subject": "={{ $node[\"Get row(s) in sheet1\"].json[\"Servece Ctegory\"] }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333333;\">\n  <p>{{ $json.output }}</p>\n  <br>\n  <p>Best Regards,<br>\n  <strong>Shuvo Biswas</strong><br>\n  AI Sales Manager</p>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1664,
+        -272
+      ],
+      "id": "80d69be9-8fa3-492b-8b98-715a00a5facc",
+      "name": "Send a message1",
+      "webhookId": "8ef1993d-9006-4e40-a0b9-37dbddc46323",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EHoNBaEj5bvYSRcC",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk",
+          "mode": "list",
+          "cachedResultName": "Ai Sales CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $node[\"Get row(s) in sheet1\"].json[\"Email\"] }}",
+            "Status": "Follow-up 1 Sent",
+            "Sent Date": "={{ $now }}",
+            "row_number": "={{ $('Get row(s) in sheet1').item.json.row_number }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Sent Date",
+              "displayName": "Sent Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Linkedln Bio",
+              "displayName": "Linkedln Bio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Servece Ctegory",
+              "displayName": "Servece Ctegory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "AI Icebreaker",
+              "displayName": "AI Icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1856,
+        -272
+      ],
+      "id": "f57b6eb0-8f54-4374-ac87-e69bcba90164",
+      "name": "Update row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ORAAXnzwftlZwSK4",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=### Role\nYou are an expert AI Appointment Setter. Your task is to analyze the latest reply from a potential lead and decide on the best next step.\n\n### Context\nLead's Name: {{ $node[\"Get row(s) in sheet1\"].json[\"Full Name\"] }}\nService Category: {{ $node[\"Get row(s) in sheet1\"].json[\"Servece Ctegory\"] }}\nLead's Latest Message: {{ $node[\"Get many messages\"].json[\"snippet\"] }}\n\n### Logic & Goals\n1. INTERESTED: If the lead sounds positive, asks questions, or expresses interest in talking/meeting:\n   - Write a warm, professional reply.\n   - Acknowledge their specific interest.\n   - Provide this booking link to schedule a call: [CALENDLY LINK]\n\n2. NOT INTERESTED/STOP: If they say \"No\", \"Stop\", \"Not interested\", or ask to be removed:\n   - Write a very brief, polite exit message like: \"Understood. Thanks for your time and best of luck!\"\n\n3. NEUTRAL/UNCLEAR: If they ask for more info before meeting:\n   - Briefly answer based on the service category and suggest a quick 5-minute call to explain better.\n\n### Constraints\n- Tone: Professional, helpful, and human-like.\n- Length: Max 3-4 sentences.\n- Formatting: Use proper spacing.\n- Output: ONLY the email body. Do not include \"Subject:\" or any other metadata.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1568,
+        48
+      ],
+      "id": "44ad0a9a-28dd-4c51-9071-4e455593f78b",
+      "name": "AI Agent2"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        1568,
+        256
+      ],
+      "id": "7e757aa1-6146-4a47-841f-cc2d0739236c",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "xEF8vnMyxp2xxevt",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Get row(s) in sheet1\"].json[\"Email\"] }}",
+        "subject": "=Re: {{ $node[\"Get row(s) in sheet1\"].json[\"Servece Ctegory\"] }}",
+        "message": "=<div style=\"font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px;\">   <p>Hi {{ $node[\"Get row(s) in sheet1\"].json[\"Full Name\"] }},</p>      <div style=\"margin-bottom: 20px;\">     {{ $node[\"AI Agent2\"].json[\"output\"].replace(/\\n/g, '<br>') }}   </div>    <p style=\"margin-top: 30px;\">     Best regards,<br>     <strong>Shuvo Biswas</strong><br>     AI Automation Specialist   </p> </div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1904,
+        48
+      ],
+      "id": "f9fa1f87-9f99-44a1-b677-d0293615f278",
+      "name": "Send a message2",
+      "webhookId": "ba54a257-f39e-4813-8011-0662a01a9241",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "EHoNBaEj5bvYSRcC",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk",
+          "mode": "list",
+          "cachedResultName": "Ai Sales CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1x0nQIHdZ4wGi1ZgEvIkW5S1c4PzTDBkb05wT_sBZClk/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Email": "={{ $node[\"Get row(s) in sheet1\"].json[\"Email\"] }}",
+            "Status": "Replied ",
+            "row_number": "={{ $node[\"Get row(s) in sheet1\"].json[\"row_number\"] }}",
+            "Appointment Setting": "Meeting Link Sent"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Sent Date",
+              "displayName": "Sent Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Linkedln Bio",
+              "displayName": "Linkedln Bio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Servece Ctegory",
+              "displayName": "Servece Ctegory",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Appointment Setting",
+              "displayName": "Appointment Setting",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "AI Icebreaker",
+              "displayName": "AI Icebreaker",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2128,
+        48
+      ],
+      "id": "5a10c758-c0f9-4c5c-b500-ad8dff634473",
+      "name": "Update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ORAAXnzwftlZwSK4",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## AI Sales Manager & Appointment Setter\n",
+        "height": 656,
+        "width": 2000,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        352,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "6e36bce5-f6ef-47f0-bf49-3cdfed3d5898",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "Lead Outreach & Initial Mail\n",
+        "height": 400,
+        "width": 1232,
+        "color": "#215A5E"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -96,
+        -704
+      ],
+      "typeVersion": 1,
+      "id": "d362857d-9541-4e1e-ae5d-c898b3d3ee49",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1hbYI_SvG3vtwTl3iQ70HCd0-JTE410rcHZzBQ3OEB1I",
+          "mode": "list",
+          "cachedResultName": "Ai sales manager",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hbYI_SvG3vtwTl3iQ70HCd0-JTE410rcHZzBQ3OEB1I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hbYI_SvG3vtwTl3iQ70HCd0-JTE410rcHZzBQ3OEB1I/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "New"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        160,
+        -624
+      ],
+      "id": "9734698b-2cf2-4856-a3f3-f7c0d41ffc5d",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "ORAAXnzwftlZwSK4",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent2": {
+      "main": [
+        [
+          {
+            "node": "Send a message2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message2": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ee5e08b0-9da6-4918-9c4f-ea0a909ca6bc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f36fa46c9ebbbaf75ff824b97b5c419fa98203106e75418ab3ba17df5aff8487"
+  },
+  "id": "qVa3WhBfE2ycMvNU",
+  "tags": []
+}
